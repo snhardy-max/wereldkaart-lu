@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <title>Wereldkaart met Introvideo & Klassen</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+  <style>
+    :root{
+      --bg:#0b1020; --land:#2a3a5f; --land-hover:#ffd54a; --land-selected:#ff5722;
+      --graticule:#324060; --ocean:#0b1020; --label:#e8eefc;
+    }
+    html,body{height:100%;margin:0;background:var(--bg);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;}
+    #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr;grid-template-columns:1fr 280px;}
+    header{grid-column:1/3;color:var(--label);padding:.6rem 1rem;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+    header .controls{display:flex;gap:.5rem;align-items:center}
+    header select, header button{background:#182238;color:var(--label);border:1px solid #2a3552;border-radius:8px;padding:.4rem .6rem;font-size:14px}
+    svg{width:100%;height:100%;display:block;background:var(--ocean);}
+    .land{fill:var(--land);transition:fill 120ms ease}
+    .land.available:hover{cursor:pointer;fill:var(--land-hover)!important;}
+    .land.selected{fill:var(--land-selected)!important;}
+    .graticule{fill:none;stroke:var(--graticule);stroke-width:.6;stroke-opacity:.6}
+    .country-outline{fill:none;stroke:#233252;stroke-width:.6;vector-effect:non-scaling-stroke}
+    .hover-outline{fill:none;stroke:#fff;stroke-width:1.5;vector-effect:non-scaling-stroke;pointer-events:none}
+    .tooltip{position:fixed;pointer-events:none;z-index:10;transform:translate(-50%,-120%);background:rgba(10,14,30,.9);color:var(--label);padding:.35rem .55rem;border:1px solid #334066;border-radius:8px;font-size:14px;white-space:nowrap}
+    #sidebar{background:#fff;color:#000;padding:1rem;overflow-y:auto;}
+    #sidebar h3{margin-top:0;}
+    #lastSidebar{margin-bottom:1rem;font-size:14px;color:#444;font-style:italic;}
+    #classModal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9999;}
+    #classModal .box{background:white;padding:2rem;border-radius:12px;max-width:320px;text-align:center;}
+    #lastResult{margin-bottom:1rem;font-size:14px;color:#333;}
+    #resultsPanel{position:fixed;top:3rem;left:50%;transform:translateX(-50%);background:white;padding:1rem;border-radius:8px;max-height:70%;overflow:auto;display:none;z-index:5001;}
+    #buttons{position:fixed;top:1rem;right:300px;display:flex;gap:.5rem;z-index:5000;}
+    /* 🎬 Video intro overlay */
+    #videoIntro{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:10000;}
+    #videoIntro .inner{position:relative;max-width:min(900px,92vw);width:100%;text-align:center;}
+    #introVideo{width:100%;height:auto;border-radius:12px;border:1px solid #1e2a4d;background:#000}
+    #skipVideo{margin-top:.5rem;background:#fff;border:0;border-radius:6px;padding:.4rem .8rem;cursor:pointer}
+    /* custom controls */
+    #videoControls{margin-top:.5rem;display:flex;gap:.5rem;justify-content:center}
+    #videoControls button{background:#fff;border:0;border-radius:6px;padding:.4rem .8rem;cursor:pointer}
+  </style>
+</head>
+<body>
+
+<!-- 🎬 Video-intro -->
+<div id="videoIntro">
+  <div class="inner">
+    <video id="introVideo" src="intro.mp4" playsinline></video>
+    <div id="videoControls">
+      <button id="playBtn">▶️ Afspelen</button>
+      <button id="pauseBtn">⏸️ Pauze</button>
+      <button id="restartBtn">⏮️ Opnieuw</button>
+    </div>
+    <button id="skipVideo">Naar klaskeuze ➡️</button>
+  </div>
+</div>
+
+<!-- Klaskeuze -->
+<div id="classModal">
+  <div class="box">
+    <h2>Kies je klas</h2>
+    <div id="lastResult"></div>
+    <select id="classSelect"></select><br><br>
+    <button id="startBtn">Start</button>
+    <button id="skipClassBtn">Ga naar wereldkaart zonder klas</button>
+    <button id="backToVideoBtn">⬅️ Terug naar video</button>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div>🌍 Interactieve wereldkaart</div>
+    <div class="controls">
+      <label for="projection">Projectie:</label>
+      <select id="projection">
+        <option value="naturalEarth1">Natural Earth</option>
+        <option value="mercator">Mercator</option>
+        <option value="equirectangular">Equirectangular</option>
+        <option value="orthographic">Orthographic</option>
+      </select>
+      <button id="reset">Reset positie</button>
+      <button id="fullscreen">Fullscreen</button>
+    </div>
+  </header>
+  <svg id="map"></svg>
+  <div id="sidebar">
+    <h3>🌍 Gekozen landen</h3>
+    <div id="lastSidebar"></div>
+    <ul id="chosenList"></ul>
+  </div>
+</div>
+
+<div id="buttons">
+  <button id="resultsBtn">📋 Resultaten</button>
+  <button id="resetResultsBtn">🗑️ Reset</button>
+  <button id="exportResultsBtn">💾 Exporteren</button>
+</div>
+
+<div id="resultsPanel">
+  <h3>Resultaten</h3>
+  <ul id="resultsList"></ul>
+  <button onclick="document.getElementById('resultsPanel').style.display='none'">Sluiten</button>
+</div>
+
+<div id="tooltip" class="tooltip" style="display:none;"></div>
+
+<script>
+(async function(){
+  let currentClass=null,lastResultText="";
+  const classSelect=document.getElementById("classSelect");
+  const lastResultDiv=document.getElementById("lastResult");
+  const lastSidebarDiv=document.getElementById("lastSidebar");
+
+  // 🇳🇱 Landnamen (voorbeeld, vul verder aan)
+  const countryTranslations={"Netherlands":"Nederland","Germany":"Duitsland","France":"Frankrijk","Spain":"Spanje","Italy":"Italië","Belgium":"België","United Kingdom":"Verenigd Koninkrijk","United States":"Verenigde Staten","Brazil":"Brazilië","South Africa":"Zuid-Afrika","China":"China","Japan":"Japan","Russia":"Rusland","Australia":"Australië"};
+  const translateName=n=>countryTranslations[n]||n;
+
+  // 🎬 Video logica
+  const videoIntro=document.getElementById("videoIntro");
+  const introVideo=document.getElementById("introVideo");
+  introVideo.controls=false;
+  const skipVideo=document.getElementById("skipVideo");
+  document.getElementById("playBtn").onclick=()=>introVideo.play();
+  document.getElementById("pauseBtn").onclick=()=>introVideo.pause();
+  document.getElementById("restartBtn").onclick=()=>{introVideo.currentTime=0; introVideo.play();};
+  const openClassModal=()=>{lastResultDiv.textContent=lastResultText?"Vorige klas: "+lastResultText:"";document.getElementById("classModal").style.display="flex";};
+  const closeVideo=()=>{videoIntro.style.display="none";openClassModal();};
+  skipVideo.addEventListener("click",closeVideo);
+  introVideo.addEventListener("ended",closeVideo);
+
+  // Klassen
+  const klasgroepen=[{prefix:"O-",count:13},{prefix:"B-",count:7}];
+  function fillClassDropdown(){classSelect.innerHTML="";klasgroepen.forEach(g=>{for(let i=0;i<g.count;i++){const o=document.createElement("option");o.value=g.prefix+String.fromCharCode(65+i);o.textContent=o.value;classSelect.appendChild(o);}});}
+  fillClassDropdown();
+  document.getElementById("startBtn").onclick=()=>{currentClass=classSelect.value;document.getElementById("classModal").style.display="none";};
+  document.getElementById("skipClassBtn").onclick=()=>{currentClass=null;document.getElementById("classModal").style.display="none";};
+  document.getElementById("backToVideoBtn").onclick=()=>{document.getElementById("classModal").style.display="none";videoIntro.style.display="flex";};
+
+  // Opslag
+  const getResults=()=>JSON.parse(localStorage.getItem("results")||"{}");
+  const getUsedCountries=()=>Object.values(getResults()).flat();
+  function saveResult(klass,land){const d=getResults();if(!d[klass])d[klass]=[];if(!d[klass].includes(land))d[klass].push(land);localStorage.setItem("results",JSON.stringify(d));const opt=[...classSelect.options].find(o=>o.value===klass);if(opt)opt.remove();updateChosenList();}
+  function resetResults(){localStorage.removeItem("results");lastResultText="";lastResultDiv.textContent="";lastSidebarDiv.textContent="";fillClassDropdown();updateChosenList();alert("Alle resultaten en meldingen zijn gewist.");}
+  function exportResults(){const d=getResults();let csv="Klas,Land\n";for(const[k,landen]of Object.entries(d)){landen.forEach(l=>csv+=`${k},${l}\n`);}const blob=new Blob([csv],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="resultaten.csv";a.click();}
+  document.getElementById("resultsBtn").onclick=()=>{const d=getResults();const ul=document.getElementById("resultsList");ul.innerHTML="";for(const[k,landen]of Object.entries(d)){const li=document.createElement("li");li.textContent=`${k}: ${landen.join(", ")}`;ul.appendChild(li);}document.getElementById("resultsPanel").style.display="block";};
+  document.getElementById("resetResultsBtn").onclick=resetResults;
+  document.getElementById("exportResultsBtn").onclick=exportResults;
+
+  function updateChosenList(){const d=getResults();const ul=document.getElementById("chosenList");ul.innerHTML="";for(const[k,landen]of Object.entries(d)){landen.forEach(l=>{const li=document.createElement("li");li.textContent=`${l} → ${k}`;ul.appendChild(li);});}lastSidebarDiv.textContent=lastResultText?"Vorige klas: "+lastResultText:"";countriesG.selectAll("path").classed("selected",d=>getUsedCountries().includes(translateName(countryName(d)))).classed("available",d=>!getUsedCountries().includes(translateName(countryName(d))));}
+
+  // Kaart
+  const svg=d3.select("#map"),g=svg.append("g"),path=d3.geoPath();
+  const hoverOutline=g.append("path").attr("class","hover-outline").attr("d","");
+  const world=await (await fetch("https://unpkg.com/world-atlas@2/countries-110m.json")).json();
+  const countries=topojson.feature(world, world.objects.countries);
+  const mesh=topojson.mesh(world, world.objects.countries,(a,b)=>a!==b);
+  const projections={naturalEarth1:d3.geoNaturalEarth1(),mercator:d3.geoMercator(),equirectangular:d3.geoEquirectangular(),orthographic:d3.geoOrthographic().clipAngle(90)};
+  let projection=projections.naturalEarth1;
+  const zoom=d3.zoom().scaleExtent([1,12]).on("zoom",ev=>g.attr("transform",ev.transform));svg.call(zoom);
+  const grat=g.append("path").attr("class","graticule");
+  const countriesG=g.append("g");
+  const borders=g.append("path").attr("class","country-outline");
+  const tooltip=d3.select("#tooltip");
+  function resize(){const{width,height}=svg.node().getBoundingClientRect();svg.attr("viewBox",[0,0,width,height]);projection.fitExtent([[20,20],[width-20,height-20]],{type:"Sphere"});path.projection(projection);grat.attr("d",path(d3.geoGraticule10()));borders.attr("d",path(mesh));countriesG.selectAll("path").attr("d",path);updateChosenList();}
+  window.addEventListener("resize",resize);
+  countriesG.selectAll("path").data(countries.features).join("path").attr("class","land available").attr("d",path).on("pointerenter",function(ev,d){const n=translateName(countryName(d));if(getUsedCountries().includes(n))return;hoverOutline.attr("d",path(d));showTip(ev,n);}).on("pointerleave",()=>{hoverOutline.attr("d","");hideTip();}).on("click",function(ev,d){const land=translateName(countryName(d));if(!currentClass){alert("Kies eerst een klas!");return;}if(getUsedCountries().includes(land)){alert(`${land} is al gekozen!`);return;}if(confirm(`Weet je zeker dat je ${land} wilt koppelen aan klas ${currentClass}?`)){saveResult(currentClass,land);d3.select(this).classed("selected",true).classed("available",false);alert(`${land} gekoppeld aan klas ${currentClass}`);lastResultText=`${currentClass} kreeg ${land}`;updateChosenList();currentClass=null;openClassModal();}});
+  function showTip(ev,text){tooltip.style("display","block").text(text).style("left",ev.clientX+"px").style("top",ev.clientY+"px");}
+  function hideTip(){tooltip.style("display","none");}
+  function countryName(d){return(d.properties&&(d.properties.name||d.properties.NAME))||`Land #${d.id}`;}
+  document.getElementById("projection").onchange=e=>{projection=projections[e.target.value];resize();};
+  document.getElementById("reset").onclick=()=>{svg.transition().duration(500).call(zoom.transform,d3.zoomIdentity);};
+  document.getElementById("fullscreen").onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();};
+  resize();updateChosenList();
+})();
+</script>
+</body>
+</html>
