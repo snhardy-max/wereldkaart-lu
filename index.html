@@ -31,7 +31,7 @@
     #classModal .box{background:white;padding:2rem;border-radius:12px;max-width:320px;text-align:center;}
     #lastResult{margin-bottom:1rem;font-size:14px;color:#333;}
     #resultsPanel{position:fixed;top:3rem;left:50%;transform:translateX(-50%);background:white;padding:1rem;border-radius:8px;max-height:70%;overflow:auto;display:none;z-index:5001;}
-    #buttons{position:fixed;top:1rem;right:300px;display:flex;gap:.5rem;z-index:5000;}
+    #buttons{position:fixed;top:1rem;left:1rem;display:flex;gap:.5rem;z-index:5000;} /* ⬅️ naar linksboven verplaatst */
     #pipInfo{color:#fff;text-align:center;margin-top:1rem;}
   </style>
 </head>
@@ -76,6 +76,7 @@
   </div>
 </div>
 
+<!-- Knoppen linksboven -->
 <div id="buttons">
   <button id="resultsBtn">📋 Resultaten</button>
   <button id="resetResultsBtn">🗑️ Reset</button>
@@ -116,7 +117,7 @@
   }
   startPiP();
 
-  // Landnamen Nederlands
+  // 🇳🇱 Landnamen Nederlands
   const countryTranslations={"Afghanistan":"Afghanistan","Albania":"Albanië","Algeria":"Algerije","Andorra":"Andorra","Angola":"Angola","Argentina":"Argentinië","Armenia":"Armenië","Australia":"Australië","Austria":"Oostenrijk","Azerbaijan":"Azerbeidzjan","Bahamas":"Bahama’s","Bahrain":"Bahrein","Bangladesh":"Bangladesh","Belgium":"België","Brazil":"Brazilië","Bulgaria":"Bulgarije","Canada":"Canada","Chile":"Chili","China":"China","Colombia":"Colombia","Croatia":"Kroatië","Cuba":"Cuba","Cyprus":"Cyprus","Czechia":"Tsjechië","Denmark":"Denemarken","Egypt":"Egypte","Estonia":"Estland","Finland":"Finland","France":"Frankrijk","Germany":"Duitsland","Greece":"Griekenland","Hungary":"Hongarije","Iceland":"IJsland","India":"India","Indonesia":"Indonesië","Iran":"Iran","Iraq":"Irak","Ireland":"Ierland","Israel":"Israël","Italy":"Italië","Japan":"Japan","Latvia":"Letland","Lithuania":"Litouwen","Luxembourg":"Luxemburg","Mexico":"Mexico","Morocco":"Marokko","Netherlands":"Nederland","New Zealand":"Nieuw-Zeeland","Nigeria":"Nigeria","Norway":"Noorwegen","Pakistan":"Pakistan","Peru":"Peru","Philippines":"Filipijnen","Poland":"Polen","Portugal":"Portugal","Romania":"Roemenië","Russia":"Rusland","Saudi Arabia":"Saoedi-Arabië","Serbia":"Servië","Slovakia":"Slowakije","Slovenia":"Slovenië","South Africa":"Zuid-Afrika","South Korea":"Zuid-Korea","Spain":"Spanje","Sweden":"Zweden","Switzerland":"Zwitserland","Turkey":"Turkije","Ukraine":"Oekraïne","United Arab Emirates":"VAE","United Kingdom":"Verenigd Koninkrijk","United States":"Verenigde Staten","Venezuela":"Venezuela","Vietnam":"Vietnam","Zambia":"Zambia","Zimbabwe":"Zimbabwe"};
   const translateName=n=>countryTranslations[n]||n;
 
