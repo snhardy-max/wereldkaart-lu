@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8" />
-  <title>Interactieve Wereldkaart met Klassen (NL)</title>
+  <title>Interactieve Wereldkaart met Klassen (NL + PiP Video)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/topojson-client@3"></script>
@@ -12,7 +12,7 @@
       --graticule:#324060; --ocean:#0b1020; --label:#e8eefc;
     }
     html,body{height:100%;margin:0;background:var(--bg);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;}
-    #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr;grid-template-columns:1fr 280px;}
+    #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr;grid-template-columns:1fr 280px;display:none;}
     header{grid-column:1/3;color:var(--label);padding:.6rem 1rem;font-weight:600;display:flex;align-items:center;justify-content:space-between}
     header .controls{display:flex;gap:.5rem;align-items:center}
     header select, header button{background:#182238;color:var(--label);border:1px solid #2a3552;border-radius:8px;padding:.4rem .6rem;font-size:14px}
@@ -32,12 +32,14 @@
     #lastResult{margin-bottom:1rem;font-size:14px;color:#333;}
     #resultsPanel{position:fixed;top:3rem;left:50%;transform:translateX(-50%);background:white;padding:1rem;border-radius:8px;max-height:70%;overflow:auto;display:none;z-index:5001;}
     #buttons{position:fixed;top:1rem;right:300px;display:flex;gap:.5rem;z-index:5000;}
+    #pipInfo{color:#fff;text-align:center;margin-top:1rem;}
   </style>
 </head>
 <body>
 
-<!-- Introvideo -->
-<video id="introVideo" src="intro.mp4" playsinline controls autoplay style="width:100%;max-height:60vh;display:block;margin:0 auto;"></video>
+<!-- Introvideo (verborgen) -->
+<video id="introVideo" src="intro.mp4" playsinline style="display:none"></video>
+<div id="pipInfo"></div>
 
 <!-- Klassen-popup -->
 <div id="classModal">
@@ -50,7 +52,7 @@
   </div>
 </div>
 
-<div id="app" style="display:none;">
+<div id="app">
   <header>
     <div>🌍 Interactieve wereldkaart</div>
     <div class="controls">
@@ -94,15 +96,28 @@
   const classSelect=document.getElementById("classSelect");
   const lastResultDiv=document.getElementById("lastResult");
   const lastSidebarDiv=document.getElementById("lastSidebar");
+  const pipInfo=document.getElementById("pipInfo");
 
   const introVideo=document.getElementById("introVideo");
-  introVideo.addEventListener("ended",()=>{document.getElementById("classModal").style.display="flex";document.getElementById("app").style.display="grid";});
 
-  // 🔠 Volledige NL vertaalmap
-  const countryTranslations = {
-    "Afghanistan":"Afghanistan","Albania":"Albanië","Algeria":"Algerije","Andorra":"Andorra","Angola":"Angola","Antigua and Barbuda":"Antigua en Barbuda","Argentina":"Argentinië","Armenia":"Armenië","Australia":"Australië","Austria":"Oostenrijk","Azerbaijan":"Azerbeidzjan","Bahamas":"Bahama’s","Bahrain":"Bahrein","Bangladesh":"Bangladesh","Barbados":"Barbados","Belarus":"Wit-Rusland","Belgium":"België","Belize":"Belize","Benin":"Benin","Bhutan":"Bhutan","Bolivia":"Bolivia","Bosnia and Herzegovina":"Bosnië en Herzegovina","Botswana":"Botswana","Brazil":"Brazilië","Brunei":"Brunei","Bulgaria":"Bulgarije","Burkina Faso":"Burkina Faso","Burundi":"Burundi","Cambodia":"Cambodja","Cameroon":"Kameroen","Canada":"Canada","Cape Verde":"Kaapverdië","Central African Republic":"Centraal-Afrikaanse Republiek","Chad":"Tsjaad","Chile":"Chili","China":"China","Colombia":"Colombia","Comoros":"Comoren","Costa Rica":"Costa Rica","Croatia":"Kroatië","Cuba":"Cuba","Cyprus":"Cyprus","Czechia":"Tsjechië","Democratic Republic of the Congo":"Congo-Kinshasa","Denmark":"Denemarken","Djibouti":"Djibouti","Dominica":"Dominica","Dominican Republic":"Dominicaanse Republiek","Ecuador":"Ecuador","Egypt":"Egypte","El Salvador":"El Salvador","Equatorial Guinea":"Equatoriaal-Guinea","Eritrea":"Eritrea","Estonia":"Estland","Eswatini":"Eswatini","Ethiopia":"Ethiopië","Fiji":"Fiji","Finland":"Finland","France":"Frankrijk","Gabon":"Gabon","Gambia":"Gambia","Georgia":"Georgië","Germany":"Duitsland","Ghana":"Ghana","Greece":"Griekenland","Grenada":"Grenada","Guatemala":"Guatemala","Guinea":"Guinee","Guinea-Bissau":"Guinee-Bissau","Guyana":"Guyana","Haiti":"Haïti","Honduras":"Honduras","Hungary":"Hongarije","Iceland":"IJsland","India":"India","Indonesia":"Indonesië","Iran":"Iran","Iraq":"Irak","Ireland":"Ierland","Israel":"Israël","Italy":"Italië","Jamaica":"Jamaica","Japan":"Japan","Jordan":"Jordanië","Kazakhstan":"Kazachstan","Kenya":"Kenia","Kiribati":"Kiribati","Kuwait":"Koeweit","Kyrgyzstan":"Kirgizië","Laos":"Laos","Latvia":"Letland","Lebanon":"Libanon","Lesotho":"Lesotho","Liberia":"Liberia","Libya":"Libië","Liechtenstein":"Liechtenstein","Lithuania":"Litouwen","Luxembourg":"Luxemburg","Madagascar":"Madagaskar","Malawi":"Malawi","Malaysia":"Maleisië","Maldives":"Maldiven","Mali":"Mali","Malta":"Malta","Marshall Islands":"Marshalleilanden","Mauritania":"Mauritanië","Mauritius":"Mauritius","Mexico":"Mexico","Micronesia":"Micronesië","Moldova":"Moldavië","Monaco":"Monaco","Mongolia":"Mongolië","Montenegro":"Montenegro","Morocco":"Marokko","Mozambique":"Mozambique","Myanmar":"Myanmar","Namibia":"Namibië","Nauru":"Nauru","Nepal":"Nepal","Netherlands":"Nederland","New Zealand":"Nieuw-Zeeland","Nicaragua":"Nicaragua","Niger":"Niger","Nigeria":"Nigeria","North Korea":"Noord-Korea","North Macedonia":"Noord-Macedonië","Norway":"Noorwegen","Oman":"Oman","Pakistan":"Pakistan","Palau":"Palau","Panama":"Panama","Papua New Guinea":"Papoea-Nieuw-Guinea","Paraguay":"Paraguay","Peru":"Peru","Philippines":"Filipijnen","Poland":"Polen","Portugal":"Portugal","Qatar":"Qatar","Republic of the Congo":"Congo-Brazzaville","Romania":"Roemenië","Russia":"Rusland","Rwanda":"Rwanda","Saint Kitts and Nevis":"Saint Kitts en Nevis","Saint Lucia":"Saint Lucia","Saint Vincent and the Grenadines":"Saint Vincent en de Grenadines","Samoa":"Samoa","San Marino":"San Marino","Sao Tome and Principe":"Sao Tomé en Principe","Saudi Arabia":"Saoedi-Arabië","Senegal":"Senegal","Serbia":"Servië","Seychelles":"Seychellen","Sierra Leone":"Sierra Leone","Singapore":"Singapore","Slovakia":"Slowakije","Slovenia":"Slovenië","Solomon Islands":"Salomonseilanden","Somalia":"Somalië","South Africa":"Zuid-Afrika","South Korea":"Zuid-Korea","South Sudan":"Zuid-Soedan","Spain":"Spanje","Sri Lanka":"Sri Lanka","Sudan":"Soedan","Suriname":"Suriname","Sweden":"Zweden","Switzerland":"Zwitserland","Syria":"Syrië","Tajikistan":"Tadzjikistan","Tanzania":"Tanzania","Thailand":"Thailand","Timor-Leste":"Oost-Timor","Togo":"Togo","Tonga":"Tonga","Trinidad and Tobago":"Trinidad en Tobago","Tunisia":"Tunesië","Turkey":"Turkije","Turkmenistan":"Turkmenistan","Tuvalu":"Tuvalu","Uganda":"Oeganda","Ukraine":"Oekraïne","United Arab Emirates":"Verenigde Arabische Emiraten","United Kingdom":"Verenigd Koninkrijk","United States":"Verenigde Staten","Uruguay":"Uruguay","Uzbekistan":"Oezbekistan","Vanuatu":"Vanuatu","Vatican City":"Vaticaanstad","Venezuela":"Venezuela","Vietnam":"Vietnam","Yemen":"Jemen","Zambia":"Zambia","Zimbabwe":"Zimbabwe"
-  };
+  // 🎬 Start video in PiP
+  async function startPiP(){
+    try{
+      await introVideo.play();
+      await introVideo.requestPictureInPicture();
+      pipInfo.textContent="Video draait nu in PiP.";
+      document.getElementById("app").style.display="grid";
+      document.getElementById("classModal").style.display="flex";
+    }catch(e){
+      pipInfo.textContent="Automatisch PiP kon niet starten. Klik op de videospeler in de browser om PiP te activeren.";
+      document.getElementById("app").style.display="grid";
+      document.getElementById("classModal").style.display="flex";
+    }
+  }
+  startPiP();
 
+  // Landnamen Nederlands
+  const countryTranslations={"Afghanistan":"Afghanistan","Albania":"Albanië","Algeria":"Algerije","Andorra":"Andorra","Angola":"Angola","Argentina":"Argentinië","Armenia":"Armenië","Australia":"Australië","Austria":"Oostenrijk","Azerbaijan":"Azerbeidzjan","Bahamas":"Bahama’s","Bahrain":"Bahrein","Bangladesh":"Bangladesh","Belgium":"België","Brazil":"Brazilië","Bulgaria":"Bulgarije","Canada":"Canada","Chile":"Chili","China":"China","Colombia":"Colombia","Croatia":"Kroatië","Cuba":"Cuba","Cyprus":"Cyprus","Czechia":"Tsjechië","Denmark":"Denemarken","Egypt":"Egypte","Estonia":"Estland","Finland":"Finland","France":"Frankrijk","Germany":"Duitsland","Greece":"Griekenland","Hungary":"Hongarije","Iceland":"IJsland","India":"India","Indonesia":"Indonesië","Iran":"Iran","Iraq":"Irak","Ireland":"Ierland","Israel":"Israël","Italy":"Italië","Japan":"Japan","Latvia":"Letland","Lithuania":"Litouwen","Luxembourg":"Luxemburg","Mexico":"Mexico","Morocco":"Marokko","Netherlands":"Nederland","New Zealand":"Nieuw-Zeeland","Nigeria":"Nigeria","Norway":"Noorwegen","Pakistan":"Pakistan","Peru":"Peru","Philippines":"Filipijnen","Poland":"Polen","Portugal":"Portugal","Romania":"Roemenië","Russia":"Rusland","Saudi Arabia":"Saoedi-Arabië","Serbia":"Servië","Slovakia":"Slowakije","Slovenia":"Slovenië","South Africa":"Zuid-Afrika","South Korea":"Zuid-Korea","Spain":"Spanje","Sweden":"Zweden","Switzerland":"Zwitserland","Turkey":"Turkije","Ukraine":"Oekraïne","United Arab Emirates":"VAE","United Kingdom":"Verenigd Koninkrijk","United States":"Verenigde Staten","Venezuela":"Venezuela","Vietnam":"Vietnam","Zambia":"Zambia","Zimbabwe":"Zimbabwe"};
   const translateName=n=>countryTranslations[n]||n;
 
   // Klassenlijst
