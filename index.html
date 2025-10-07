@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8" />
-  <title>Interactieve Wereldkaart met Klassen (NL + PiP Video)</title>
+  <title>Interactieve Wereldkaart met Klassen (Volledige NL-versie)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/topojson-client@3"></script>
@@ -12,7 +12,7 @@
       --graticule:#324060; --ocean:#0b1020; --label:#e8eefc;
     }
     html,body{height:100%;margin:0;background:var(--bg);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;}
-    #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr;grid-template-columns:1fr 280px;display:none;}
+    #app{position:fixed;inset:0;display:grid;grid-template-rows:auto 1fr;grid-template-columns:1fr 280px;}
     header{grid-column:1/3;color:var(--label);padding:.6rem 1rem;font-weight:600;display:flex;align-items:center;justify-content:space-between}
     header .controls{display:flex;gap:.5rem;align-items:center}
     header select, header button{background:#182238;color:var(--label);border:1px solid #2a3552;border-radius:8px;padding:.4rem .6rem;font-size:14px}
@@ -27,25 +27,18 @@
     #sidebar{background:#fff;color:#000;padding:1rem;overflow-y:auto;}
     #sidebar h3{margin-top:0;}
     #lastSidebar{margin-bottom:1rem;font-size:14px;color:#444;font-style:italic;}
-    #classModal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9999;}
+    #classModal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:9999;}
     #classModal .box{background:white;padding:2rem;border-radius:12px;max-width:320px;text-align:center;}
-    #lastResult{margin-bottom:1rem;font-size:14px;color:#333;}
     #resultsPanel{position:fixed;top:3rem;left:50%;transform:translateX(-50%);background:white;padding:1rem;border-radius:8px;max-height:70%;overflow:auto;display:none;z-index:5001;}
-    #buttons{position:fixed;top:1rem;left:1rem;display:flex;gap:.5rem;z-index:5000;} /* ⬅️ naar linksboven verplaatst */
-    #pipInfo{color:#fff;text-align:center;margin-top:1rem;}
+    #buttons{position:fixed;top:1rem;left:1rem;display:flex;gap:.5rem;z-index:5000;}
   </style>
 </head>
 <body>
-
-<!-- Introvideo (verborgen) -->
-<video id="introVideo" src="intro.mp4" playsinline style="display:none"></video>
-<div id="pipInfo"></div>
 
 <!-- Klassen-popup -->
 <div id="classModal">
   <div class="box">
     <h2>Kies je klas</h2>
-    <div id="lastResult"></div>
     <select id="classSelect"></select><br><br>
     <button id="startBtn">Start</button>
     <button id="skipClassBtn">Ga naar wereldkaart zonder klas</button>
@@ -95,52 +88,84 @@
 (async function(){
   let currentClass=null,lastResultText="";
   const classSelect=document.getElementById("classSelect");
-  const lastResultDiv=document.getElementById("lastResult");
   const lastSidebarDiv=document.getElementById("lastSidebar");
-  const pipInfo=document.getElementById("pipInfo");
 
-  const introVideo=document.getElementById("introVideo");
-
-  // 🎬 Start video in PiP
-  async function startPiP(){
-    try{
-      await introVideo.play();
-      await introVideo.requestPictureInPicture();
-      pipInfo.textContent="Video draait nu in PiP.";
-      document.getElementById("app").style.display="grid";
-      document.getElementById("classModal").style.display="flex";
-    }catch(e){
-      pipInfo.textContent="Automatisch PiP kon niet starten. Klik op de videospeler in de browser om PiP te activeren.";
-      document.getElementById("app").style.display="grid";
-      document.getElementById("classModal").style.display="flex";
-    }
-  }
-  startPiP();
-
-  // 🇳🇱 Landnamen Nederlands
-  const countryTranslations={"Afghanistan":"Afghanistan","Albania":"Albanië","Algeria":"Algerije","Andorra":"Andorra","Angola":"Angola","Argentina":"Argentinië","Armenia":"Armenië","Australia":"Australië","Austria":"Oostenrijk","Azerbaijan":"Azerbeidzjan","Bahamas":"Bahama’s","Bahrain":"Bahrein","Bangladesh":"Bangladesh","Belgium":"België","Brazil":"Brazilië","Bulgaria":"Bulgarije","Canada":"Canada","Chile":"Chili","China":"China","Colombia":"Colombia","Croatia":"Kroatië","Cuba":"Cuba","Cyprus":"Cyprus","Czechia":"Tsjechië","Denmark":"Denemarken","Egypt":"Egypte","Estonia":"Estland","Finland":"Finland","France":"Frankrijk","Germany":"Duitsland","Greece":"Griekenland","Hungary":"Hongarije","Iceland":"IJsland","India":"India","Indonesia":"Indonesië","Iran":"Iran","Iraq":"Irak","Ireland":"Ierland","Israel":"Israël","Italy":"Italië","Japan":"Japan","Latvia":"Letland","Lithuania":"Litouwen","Luxembourg":"Luxemburg","Mexico":"Mexico","Morocco":"Marokko","Netherlands":"Nederland","New Zealand":"Nieuw-Zeeland","Nigeria":"Nigeria","Norway":"Noorwegen","Pakistan":"Pakistan","Peru":"Peru","Philippines":"Filipijnen","Poland":"Polen","Portugal":"Portugal","Romania":"Roemenië","Russia":"Rusland","Saudi Arabia":"Saoedi-Arabië","Serbia":"Servië","Slovakia":"Slowakije","Slovenia":"Slovenië","South Africa":"Zuid-Afrika","South Korea":"Zuid-Korea","Spain":"Spanje","Sweden":"Zweden","Switzerland":"Zwitserland","Turkey":"Turkije","Ukraine":"Oekraïne","United Arab Emirates":"VAE","United Kingdom":"Verenigd Koninkrijk","United States":"Verenigde Staten","Venezuela":"Venezuela","Vietnam":"Vietnam","Zambia":"Zambia","Zimbabwe":"Zimbabwe"};
+  // 🇳🇱 Landnamen
+  const countryTranslations={
+    "Russia":"Rusland","Ukraine":"Oekraïne","Israel":"Israël","Kazakhstan":"Kazachstan","Saudi Arabia":"Saoedi-Arabië","Madagascar":"Madagaskar",
+    "Netherlands":"Nederland","Belgium":"België","France":"Frankrijk","Germany":"Duitsland","Spain":"Spanje","Italy":"Italië","China":"China",
+    "Japan":"Japan","United States":"Verenigde Staten","Brazil":"Brazilië","Australia":"Australië","Canada":"Canada","India":"India","Norway":"Noorwegen",
+    "Sweden":"Zweden","United Kingdom":"Verenigd Koninkrijk","South Africa":"Zuid-Afrika","Argentina":"Argentinië","Egypt":"Egypte","Morocco":"Marokko"
+  };
   const translateName=n=>countryTranslations[n]||n;
 
   // Klassenlijst
   const klasgroepen=[{prefix:"O-",count:13},{prefix:"B-",count:7}];
-  function fillClassDropdown(){classSelect.innerHTML="";klasgroepen.forEach(g=>{for(let i=0;i<g.count;i++){const o=document.createElement("option");o.value=g.prefix+String.fromCharCode(65+i);o.textContent=o.value;classSelect.appendChild(o);}});}
+  function fillClassDropdown(){
+    classSelect.innerHTML="";
+    klasgroepen.forEach(g=>{
+      for(let i=0;i<g.count;i++){
+        const o=document.createElement("option");
+        o.value=g.prefix+String.fromCharCode(65+i);
+        o.textContent=o.value;
+        classSelect.appendChild(o);
+      }
+    });
+  }
   fillClassDropdown();
+
+  // Openingsvenster direct tonen
+  document.getElementById("app").style.display="grid";
+  document.getElementById("classModal").style.display="flex";
 
   document.getElementById("chooseClass").onclick=()=>{document.getElementById("classModal").style.display="flex";};
   document.getElementById("startBtn").onclick=()=>{currentClass=classSelect.value;document.getElementById("classModal").style.display="none";};
   document.getElementById("skipClassBtn").onclick=()=>{currentClass=null;document.getElementById("classModal").style.display="none";};
 
+  // Resultatenbeheer
   const getResults=()=>JSON.parse(localStorage.getItem("results")||"{}");
   const getUsedCountries=()=>Object.values(getResults()).flat();
-  function saveResult(klass,land){const d=getResults();if(!d[klass])d[klass]=[];if(!d[klass].includes(land))d[klass].push(land);localStorage.setItem("results",JSON.stringify(d));updateChosenList();}
-  function resetResults(){localStorage.removeItem("results");fillClassDropdown();updateChosenList();alert("Alles gewist.");}
-  function exportResults(){const d=getResults();let csv="Klas,Land\n";for(const[k,landen]of Object.entries(d)){landen.forEach(l=>csv+=`${k},${l}\n`);}const blob=new Blob([csv],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="resultaten.csv";a.click();}
-  document.getElementById("resultsBtn").onclick=()=>{const d=getResults();const ul=document.getElementById("resultsList");ul.innerHTML="";for(const[k,landen]of Object.entries(d)){const li=document.createElement("li");li.textContent=`${k}: ${landen.join(", ")}`;ul.appendChild(li);}document.getElementById("resultsPanel").style.display="block";};
+  function saveResult(klass,land){
+    const d=getResults();
+    if(!d[klass])d[klass]=[];
+    if(!d[klass].includes(land))d[klass].push(land);
+    localStorage.setItem("results",JSON.stringify(d));
+    updateChosenList();
+  }
+  function resetResults(){
+    localStorage.removeItem("results");
+    fillClassDropdown();
+    updateChosenList();
+    alert("Alles gewist.");
+  }
+  function exportResults(){
+    const d=getResults();
+    let csv="Klas,Land\n";
+    for(const[k,landen]of Object.entries(d)){
+      landen.forEach(l=>csv+=`${k},${l}\n`);
+    }
+    const blob=new Blob([csv],{type:"text/csv"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="resultaten.csv";
+    a.click();
+  }
+
+  document.getElementById("resultsBtn").onclick=()=>{
+    const d=getResults();
+    const ul=document.getElementById("resultsList");
+    ul.innerHTML="";
+    for(const[k,landen]of Object.entries(d)){
+      const li=document.createElement("li");
+      li.textContent=`${k}: ${landen.join(", ")}`;
+      ul.appendChild(li);
+    }
+    document.getElementById("resultsPanel").style.display="block";
+  };
   document.getElementById("resetResultsBtn").onclick=resetResults;
   document.getElementById("exportResultsBtn").onclick=exportResults;
 
-  function updateChosenList(){const d=getResults();const ul=document.getElementById("chosenList");ul.innerHTML="";for(const[k,landen]of Object.entries(d)){landen.forEach(l=>{const li=document.createElement("li");li.textContent=`${l} → ${k}`;ul.appendChild(li);});}countriesG.selectAll("path").classed("selected",d=>getUsedCountries().includes(translateName(countryName(d)))).classed("available",d=>!getUsedCountries().includes(translateName(countryName(d))));}
-
+  // 🌍 Kaart tekenen
   const svg=d3.select("#map"),g=svg.append("g"),path=d3.geoPath();
   const hoverOutline=g.append("path").attr("class","hover-outline").attr("d","");
   const world=await (await fetch("https://unpkg.com/world-atlas@2/countries-110m.json")).json();
@@ -148,21 +173,62 @@
   const mesh=topojson.mesh(world, world.objects.countries,(a,b)=>a!==b);
   const projections={naturalEarth1:d3.geoNaturalEarth1(),mercator:d3.geoMercator(),equirectangular:d3.geoEquirectangular(),orthographic:d3.geoOrthographic().clipAngle(90)};
   let projection=projections.naturalEarth1;
-  const zoom=d3.zoom().scaleExtent([1,12]).on("zoom",ev=>g.attr("transform",ev.transform));svg.call(zoom);
+  const zoom=d3.zoom().scaleExtent([1,12]).on("zoom",ev=>g.attr("transform",ev.transform));
+  svg.call(zoom);
   const grat=g.append("path").attr("class","graticule");
   const countriesG=g.append("g");
   const borders=g.append("path").attr("class","country-outline");
   const tooltip=d3.select("#tooltip");
 
-  function resize(){const{width,height}=svg.node().getBoundingClientRect();svg.attr("viewBox",[0,0,width,height]);projection.fitExtent([[20,20],[width-20,height-20]],{type:"Sphere"});path.projection(projection);grat.attr("d",path(d3.geoGraticule10()));borders.attr("d",path(mesh));countriesG.selectAll("path").attr("d",path);updateChosenList();}
+  const preSelected=["Rusland","Oekraïne","Israël","Kazachstan","Saoedi-Arabië","Madagaskar"];
+
+  function updateChosenList(){
+    const d=getResults();
+    const ul=document.getElementById("chosenList");
+    ul.innerHTML="";
+    for(const[k,landen]of Object.entries(d)){
+      landen.forEach(l=>{
+        const li=document.createElement("li");
+        li.textContent=`${l} → ${k}`;
+        ul.appendChild(li);
+      });
+    }
+    countriesG.selectAll("path")
+      .classed("selected",d=>{
+        const name=translateName(countryName(d));
+        return preSelected.includes(name)||getUsedCountries().includes(name);
+      })
+      .classed("available",d=>{
+        const name=translateName(countryName(d));
+        return !(preSelected.includes(name)||getUsedCountries().includes(name));
+      });
+  }
+
+  function resize(){
+    const{width,height}=svg.node().getBoundingClientRect();
+    svg.attr("viewBox",[0,0,width,height]);
+    projection.fitExtent([[20,20],[width-20,height-20]],{type:"Sphere"});
+    path.projection(projection);
+    grat.attr("d",path(d3.geoGraticule10()));
+    borders.attr("d",path(mesh));
+    countriesG.selectAll("path").attr("d",path);
+    updateChosenList();
+  }
   window.addEventListener("resize",resize);
 
   countriesG.selectAll("path").data(countries.features).join("path")
-    .attr("class","land available").attr("d",path)
-    .on("pointerenter",function(ev,d){const n=translateName(countryName(d));if(getUsedCountries().includes(n))return;hoverOutline.attr("d",path(d));tooltip.style("display","block").text(n).style("left",ev.clientX+"px").style("top",ev.clientY+"px");})
+    .attr("class","land available")
+    .attr("d",path)
+    .on("pointerenter",function(ev,d){
+      const n=translateName(countryName(d));
+      if(preSelected.includes(n)||getUsedCountries().includes(n))return;
+      hoverOutline.attr("d",path(d));
+      tooltip.style("display","block").text(n).style("left",ev.clientX+"px").style("top",ev.clientY+"px");
+    })
     .on("pointerleave",()=>{hoverOutline.attr("d","");tooltip.style("display","none");})
     .on("click",function(ev,d){
       const land=translateName(countryName(d));
+      if(preSelected.includes(land)){alert(`${land} is al vooraf gekozen.`);return;}
       if(!currentClass){alert("Kies eerst een klas!");return;}
       if(getUsedCountries().includes(land)){alert(`${land} is al gekozen!`);return;}
       if(confirm(`Weet je zeker dat je ${land} wilt koppelen aan klas ${currentClass}?`)){
@@ -175,11 +241,19 @@
     });
 
   function countryName(d){return(d.properties&&(d.properties.name||d.properties.NAME))||`Land #${d.id}`;}
-  document.getElementById("projection").onchange=e=>{projection=projections[e.target.value];resize();};
-  document.getElementById("reset").onclick=()=>{svg.transition().duration(500).call(zoom.transform,d3.zoomIdentity);};
-  document.getElementById("fullscreen").onclick=()=>{if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();};
 
-  resize();updateChosenList();
+  document.getElementById("projection").onchange=e=>{
+    projection=projections[e.target.value];
+    resize();
+  };
+  document.getElementById("reset").onclick=()=>{svg.transition().duration(500).call(zoom.transform,d3.zoomIdentity);};
+  document.getElementById("fullscreen").onclick=()=>{
+    if(!document.fullscreenElement)document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+  };
+
+  resize();
+  updateChosenList();
 })();
 </script>
 </body>
