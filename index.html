@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8" />
-  <title>Interactieve Wereldkaart met Klassen (Volledig NL)</title>
+  <title>Interactieve Wereldkaart met Klassen (NL)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/topojson-client@3"></script>
@@ -35,7 +35,7 @@
 </head>
 <body>
 
-<!-- Popupmenu voor klaskeuze -->
+<!-- Popupmenu -->
 <div id="classModal">
   <div class="box">
     <h2>Kies je klas</h2>
@@ -91,7 +91,7 @@
   const classSelect=document.getElementById("classSelect");
   const usedClassesList=document.getElementById("usedClasses");
 
-  // 🌍 Vertaaltabel
+  // 🇳🇱 Landnamen
   const countryTranslations={
     "Russia":"Rusland","Ukraine":"Oekraïne","Israel":"Israël","Kazakhstan":"Kazachstan","Saudi Arabia":"Saoedi-Arabië","Madagascar":"Madagaskar",
     "Italy":"Italië","Belgium":"België","France":"Frankrijk","Sweden":"Zweden","Norway":"Noorwegen","Denmark":"Denemarken","Turkey":"Turkije","Spain":"Spanje",
@@ -105,9 +105,9 @@
     "Italië","België","Frankrijk","Zweden","Noorwegen","Denemarken","Turkije","Spanje"
   ];
 
-  // 🏫 Klassenlijst
+  // 🏫 Klassen
   const klasgroepen=[{prefix:"O-",count:13},{prefix:"B-",count:7}];
-  const usedClasses=["O-A","O-B","O-C","O-D","O-E","B-A","B-B","D-C","O-L","O-M"];
+  const usedClasses=["O-A","O-B","O-C","O-D","O-E","B-A","B-B","B-C","O-L","O-M"];
 
   function fillClassDropdown(){
     classSelect.innerHTML="";
@@ -132,7 +132,7 @@
     usedClassesList.appendChild(li);
   });
 
-  // Popup bij start
+  // Popup direct bij start
   document.getElementById("app").style.display="grid";
   document.getElementById("classModal").style.display="flex";
 
@@ -205,10 +205,9 @@
     const d=getResults();
     const ul=document.getElementById("chosenList");
     ul.innerHTML="";
-    // Toon ook vooraf gekozen landen
     preSelected.forEach(l=>{
       const li=document.createElement("li");
-      li.textContent=l+" (vooraf gekozen)";
+      li.textContent=l;
       ul.appendChild(li);
     });
     for(const[k,landen]of Object.entries(d)){
