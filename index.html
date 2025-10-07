@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8" />
-  <title>Interactieve Wereldkaart met Klassen (Volledige NL-versie)</title>
+  <title>Interactieve Wereldkaart met Klassen (Volledig NL)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/topojson-client@3"></script>
@@ -26,7 +26,7 @@
     .tooltip{position:fixed;pointer-events:none;z-index:10;transform:translate(-50%,-120%);background:rgba(10,14,30,.9);color:var(--label);padding:.35rem .55rem;border:1px solid #334066;border-radius:8px;font-size:14px;white-space:nowrap}
     #sidebar{background:#fff;color:#000;padding:1rem;overflow-y:auto;}
     #sidebar h3{margin-top:0;}
-    #lastSidebar{margin-bottom:1rem;font-size:14px;color:#444;font-style:italic;}
+    #sidebar ul{padding-left:1.2rem;}
     #classModal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;z-index:9999;}
     #classModal .box{background:white;padding:2rem;border-radius:12px;max-width:320px;text-align:center;}
     #resultsPanel{position:fixed;top:3rem;left:50%;transform:translateX(-50%);background:white;padding:1rem;border-radius:8px;max-height:70%;overflow:auto;display:none;z-index:5001;}
@@ -35,7 +35,7 @@
 </head>
 <body>
 
-<!-- Klassen-popup -->
+<!-- Popupmenu voor klaskeuze -->
 <div id="classModal">
   <div class="box">
     <h2>Kies je klas</h2>
@@ -64,8 +64,9 @@
   <svg id="map"></svg>
   <div id="sidebar">
     <h3>🌍 Gekozen landen</h3>
-    <div id="lastSidebar"></div>
     <ul id="chosenList"></ul>
+    <h3>🏫 Klassen die al geweest zijn</h3>
+    <ul id="usedClasses"></ul>
   </div>
 </div>
 
@@ -86,35 +87,52 @@
 
 <script>
 (async function(){
-  let currentClass=null,lastResultText="";
+  let currentClass=null;
   const classSelect=document.getElementById("classSelect");
-  const lastSidebarDiv=document.getElementById("lastSidebar");
+  const usedClassesList=document.getElementById("usedClasses");
 
-  // 🇳🇱 Landnamen
+  // 🌍 Vertaaltabel
   const countryTranslations={
     "Russia":"Rusland","Ukraine":"Oekraïne","Israel":"Israël","Kazakhstan":"Kazachstan","Saudi Arabia":"Saoedi-Arabië","Madagascar":"Madagaskar",
-    "Netherlands":"Nederland","Belgium":"België","France":"Frankrijk","Germany":"Duitsland","Spain":"Spanje","Italy":"Italië","China":"China",
-    "Japan":"Japan","United States":"Verenigde Staten","Brazil":"Brazilië","Australia":"Australië","Canada":"Canada","India":"India","Norway":"Noorwegen",
-    "Sweden":"Zweden","United Kingdom":"Verenigd Koninkrijk","South Africa":"Zuid-Afrika","Argentina":"Argentinië","Egypt":"Egypte","Morocco":"Marokko"
+    "Italy":"Italië","Belgium":"België","France":"Frankrijk","Sweden":"Zweden","Norway":"Noorwegen","Denmark":"Denemarken","Turkey":"Turkije","Spain":"Spanje",
+    "Netherlands":"Nederland","Germany":"Duitsland","China":"China","Japan":"Japan","United States":"Verenigde Staten","Brazil":"Brazilië","India":"India","Australia":"Australië"
   };
   const translateName=n=>countryTranslations[n]||n;
 
-  // Klassenlijst
+  // 🌏 Vooraf gekozen landen
+  const preSelected=[
+    "Rusland","Oekraïne","Israël","Kazachstan","Saoedi-Arabië","Madagaskar",
+    "Italië","België","Frankrijk","Zweden","Noorwegen","Denemarken","Turkije","Spanje"
+  ];
+
+  // 🏫 Klassenlijst
   const klasgroepen=[{prefix:"O-",count:13},{prefix:"B-",count:7}];
+  const usedClasses=["O-A","O-B","O-C","O-D","O-E","B-A","B-B","D-C","O-L","O-M"];
+
   function fillClassDropdown(){
     classSelect.innerHTML="";
     klasgroepen.forEach(g=>{
       for(let i=0;i<g.count;i++){
-        const o=document.createElement("option");
-        o.value=g.prefix+String.fromCharCode(65+i);
-        o.textContent=o.value;
-        classSelect.appendChild(o);
+        const val=g.prefix+String.fromCharCode(65+i);
+        if(!usedClasses.includes(val)){
+          const o=document.createElement("option");
+          o.value=val;
+          o.textContent=val;
+          classSelect.appendChild(o);
+        }
       }
     });
   }
   fillClassDropdown();
 
-  // Openingsvenster direct tonen
+  // Voeg gebruikte klassen toe aan rechterlijst
+  usedClasses.forEach(k=>{
+    const li=document.createElement("li");
+    li.textContent=k;
+    usedClassesList.appendChild(li);
+  });
+
+  // Popup bij start
   document.getElementById("app").style.display="grid";
   document.getElementById("classModal").style.display="flex";
 
@@ -122,9 +140,10 @@
   document.getElementById("startBtn").onclick=()=>{currentClass=classSelect.value;document.getElementById("classModal").style.display="none";};
   document.getElementById("skipClassBtn").onclick=()=>{currentClass=null;document.getElementById("classModal").style.display="none";};
 
-  // Resultatenbeheer
+  // 📋 Resultatenbeheer
   const getResults=()=>JSON.parse(localStorage.getItem("results")||"{}");
   const getUsedCountries=()=>Object.values(getResults()).flat();
+
   function saveResult(klass,land){
     const d=getResults();
     if(!d[klass])d[klass]=[];
@@ -132,12 +151,14 @@
     localStorage.setItem("results",JSON.stringify(d));
     updateChosenList();
   }
+
   function resetResults(){
     localStorage.removeItem("results");
     fillClassDropdown();
     updateChosenList();
     alert("Alles gewist.");
   }
+
   function exportResults(){
     const d=getResults();
     let csv="Klas,Land\n";
@@ -165,7 +186,7 @@
   document.getElementById("resetResultsBtn").onclick=resetResults;
   document.getElementById("exportResultsBtn").onclick=exportResults;
 
-  // 🌍 Kaart tekenen
+  // 🌍 Kaart
   const svg=d3.select("#map"),g=svg.append("g"),path=d3.geoPath();
   const hoverOutline=g.append("path").attr("class","hover-outline").attr("d","");
   const world=await (await fetch("https://unpkg.com/world-atlas@2/countries-110m.json")).json();
@@ -180,12 +201,16 @@
   const borders=g.append("path").attr("class","country-outline");
   const tooltip=d3.select("#tooltip");
 
-  const preSelected=["Rusland","Oekraïne","Israël","Kazachstan","Saoedi-Arabië","Madagaskar"];
-
   function updateChosenList(){
     const d=getResults();
     const ul=document.getElementById("chosenList");
     ul.innerHTML="";
+    // Toon ook vooraf gekozen landen
+    preSelected.forEach(l=>{
+      const li=document.createElement("li");
+      li.textContent=l+" (vooraf gekozen)";
+      ul.appendChild(li);
+    });
     for(const[k,landen]of Object.entries(d)){
       landen.forEach(l=>{
         const li=document.createElement("li");
